@@ -2,51 +2,63 @@
 {% block title %}To-Do App{% endblock %}
 
 {% block content %}
-  <div class="jumbotron">
-    <h1 class="display-4">To-Do App</h1>
-    <p class="lead">Just another to-do app.</p>
-  </div>
+<div class="jumbotron">
+  <h1 class="display-4">To-Do App</h1>
+  <p class="lead">Just another to-do app.</p>
+</div>
 
-  <div class="row">
-    <div class="col-md-12">
-      <div class="d-flex justify-content-between">
-        <h2>Items</h2>
-        <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addItemModal">
-          Add item
+<div class="row">
+  <div class="col-md-12">
+    <div class="d-flex justify-content-between">
+      <h2>Items</h2>
+      <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#addItemModal">
+        Add item
+      </button>
+    </div>
+    <ul class="list-group mb-4 mt-2">
+      {% for item in items %}
+      <li class="list-group-item">
+        <div class="d-flex justify-content-between">
+          <p class="align-self-center m-0">{{ item.title }}</p>
+          <div class="d-flex flex-column justify-content-end">
+            <p class="text-center m-0">{{ item.status }}</p>
+            {% if item.status == 'Todo' %}
+            <form action="/complete_item" method="post">
+              <input type="hidden" name="item-id" value="{{ item.id }}">
+              <button type="submit" class="btn btn-success btn-sm">Mark as done</button>
+            </form>
+            {% endif %}
+          </div>
+        </div>
+
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+</div>
+
+<div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add new item</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
         </button>
       </div>
-      <ul class="list-group mb-4 mt-2">
-        {% for item in items %}
-          <li class="list-group-item">
-            {{ item.title }}
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-  </div>
-
-  <div class="modal fade" id="addItemModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Add new item</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
+      <form action="/items" method="post">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="item-title">Title</label>
+            <input type="text" class="form-control" id="item-title" name="item-title">
+          </div>
         </div>
-        <form action="/items" method="post">
-          <div class="modal-body">
-            <div class="form-group">
-              <label for="item-title">Title</label>
-              <input type="text" class="form-control" id="item-title" name="item-title">
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-            <button type="submit" class="btn btn-primary">Submit</button>
-          </div>
-        </form>
-      </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          <button type="submit" class="btn btn-primary">Submit</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 {% endblock %}

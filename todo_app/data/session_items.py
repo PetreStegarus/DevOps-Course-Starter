@@ -1,9 +1,34 @@
-from flask import session
+import json
+import requests
+import os
 
-_DEFAULT_ITEMS = [
-    { 'id': 1, 'status': 'Not Started', 'title': 'List saved todo items' },
-    { 'id': 2, 'status': 'Not Started', 'title': 'Allow new items to be added' }
-]
+TRELLO_HEADERS = {"Accept": "application/json"}
+TRELLO_URL_BASE = "https://api.trello.com/1"
+TRELLO_AUTH_QUERY = (
+    f"key={os.environ.get('TRELLO_API_KEY')}&token={os.environ.get('TRELLO_API_TOKEN')}"
+)
+TRELLO_BOARD_ID = os.environ.get('TRELLO_BOARD_ID')
+TRELLO_LIST_ID_TO_DO = os.environ.get('TRELLO_LIST_ID_TO_DO')
+TRELLO_LIST_ID_DOING = os.environ.get('TRELLO_LIST_ID_DOING')
+TRELLO_LIST_ID_DONE = os.environ.get('TRELLO_LIST_ID_DONE')
+TRELLO_LIST_ID_TO_TEXT = {
+    TRELLO_LIST_ID_TO_DO: "Todo",
+    TRELLO_LIST_ID_DOING: "Doing",
+    TRELLO_LIST_ID_DONE: "Done",
+}
+TRELLO_TEXT_TO_LIST_ID = {
+    "Todo": TRELLO_LIST_ID_TO_DO,
+    "Doing": TRELLO_LIST_ID_DOING,
+    "Done": TRELLO_LIST_ID_DONE,
+}
+
+
+def trello_item_to_item(trello_item):
+    return {
+        "id": trello_item["id"],
+        "title": trello_item["name"],
+        "status": TRELLO_LIST_ID_TO_TEXT[trello_item["idList"]],
+    }
 
 
 def get_items():
@@ -13,7 +38,14 @@ def get_items():
     Returns:
         list: The list of saved items.
     """
-    return session.get('items', _DEFAULT_ITEMS.copy())
+    response = requests.request(
+        "GET",
+        f"{TRELLO_URL_BASE}/boards/{TRELLO_BOARD_ID}/cards",
+        headers=TRELLO_HEADERS,
+        params=f"{TRELLO_AUTH_QUERY}",
+    )
+
+    return [trello_item_to_item(item) for item in json.loads(response.text)]
 
 
 def get_item(id):
@@ -40,18 +72,14 @@ def add_item(title):
     Returns:
         item: The saved item.
     """
-    items = get_items()
+    response = requests.request(
+        "POST",
+        f"{TRELLO_URL_BASE}/cards",
+        headers=TRELLO_HEADERS,
+        params=f"{TRELLO_AUTH_QUERY}&idList={TRELLO_LIST_ID_TO_DO}&name={title}",
+    )
 
-    # Determine the ID for the item based on that of the previously added item
-    id = items[-1]['id'] + 1 if items else 0
-
-    item = { 'id': id, 'title': title, 'status': 'Not Started' }
-
-    # Add the item to the list
-    items.append(item)
-    session['items'] = items
-
-    return item
+    return response.text
 
 
 def save_item(item):
@@ -61,9 +89,13 @@ def save_item(item):
     Args:
         item: The item to save.
     """
-    existing_items = get_items()
-    updated_items = [item if item['id'] == existing_item['id'] else existing_item for existing_item in existing_items]
+    item_id = item["id"]
+    item_status = TRELLO_TEXT_TO_LIST_ID[item["status"]]
+    response = requests.request(
+        "PUT",
+        f"{TRELLO_URL_BASE}/cards/{item_id}",
+        headers=TRELLO_HEADERS,
+        params=f"{TRELLO_AUTH_QUERY}&idList={item_status}",
+    )
 
-    session['items'] = updated_items
-
-    return item
+    return response.text
